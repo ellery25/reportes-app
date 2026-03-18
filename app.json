@@ -2,6 +2,7 @@
   "expo": {
     "name": "reportes-app",
     "slug": "reportes-app",
+    "scheme": "reportes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,6 +16,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.rceingenieria.reportes",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +27,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sharing"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "48742556-f7c2-4ab3-8024-0ba11ad00fee"
+      }
+    },
+    "owner": "elleryrica12"
   }
 }

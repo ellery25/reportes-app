@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, RefreshControl, Alert,
+  StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { reportService } from '../../src/services/report.service';
 import { authService } from '../../src/services/auth.service';
 import { useReportStore } from '../../src/stores/report.store';
@@ -32,20 +32,25 @@ export default function ReportListScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const loadReports = useCallback(async () => {
     setLoadingList(true);
+    setLoadError('');
     try {
       const data = await reportService.list({ status: filter, search });
       setReports(data);
     } catch (e) {
-      Alert.alert('Error', 'No se pudieron cargar los reportes');
+      setLoadError(e instanceof Error ? e.message : 'No se pudieron cargar los reportes');
     } finally {
       setLoadingList(false);
     }
   }, [filter, search]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
+
+  // Refresh list whenever the screen comes into focus (e.g. after archive/complete/delete)
+  useFocusEffect(useCallback(() => { loadReports(); }, [loadReports]));
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -65,7 +70,9 @@ export default function ReportListScreen() {
         onPress={() => router.push(`/(app)/reports/${item.id}`)}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.cardClient}>{item.client_name ?? 'Sin cliente'}</Text>
+          <Text style={styles.cardClient}>
+            {item.client_name ?? `Reporte #${item.id.slice(0, 8).toUpperCase()}`}
+          </Text>
           <View style={[styles.badge, { backgroundColor: STATUS_COLORS[item.status] + '20' }]}>
             <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] }]}>
               {STATUS_LABELS[item.status]}
@@ -115,7 +122,15 @@ export default function ReportListScreen() {
         ))}
       </View>
 
-      {isLoadingList && reports.length === 0 ? (
+      {loadError ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorTitle}>Error al cargar reportes</Text>
+          <Text style={styles.errorMsg}>{loadError}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadReports}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : isLoadingList && reports.length === 0 ? (
         <ActivityIndicator style={{ marginTop: 40 }} color="#1e3a5f" size="large" />
       ) : (
         <FlatList
@@ -161,4 +176,11 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 13, color: '#6b7280', marginBottom: 4 },
   cardDate: { fontSize: 11, color: '#9ca3af' },
   empty: { textAlign: 'center', color: '#9ca3af', marginTop: 60, fontSize: 15 },
+  errorBox: { margin: 16, backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
+              borderRadius: 10, padding: 16, alignItems: 'center', gap: 8 },
+  errorTitle: { color: '#dc2626', fontWeight: '700', fontSize: 15 },
+  errorMsg: { color: '#dc2626', fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  retryBtn: { marginTop: 4, backgroundColor: '#dc2626', borderRadius: 8,
+              paddingVertical: 8, paddingHorizontal: 20 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

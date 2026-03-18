@@ -18,6 +18,11 @@ export function renderPdfHtml(data: ReportPdfData): string {
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1a1a1a; background: white; }
   .page { width: 100%; padding: 15mm; }
+  @media print {
+    @page { margin: 10mm; size: A4; }
+    body { margin: 0; }
+    .page { padding: 0; }
+  }
 
   /* HEADER */
   .header { display: flex; justify-content: space-between; align-items: center;

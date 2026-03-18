@@ -1,5 +1,15 @@
 import { supabase } from './supabase';
-import type { Report, ReportInsert, ReportUpdate } from '../lib/database.types';
+import type { Report, ReportUpdate } from '../lib/database.types';
+
+/** Converts DD/MM/YYYY to YYYY-MM-DD for Postgres DATE columns */
+function toIsoDate(value: unknown): string | null {
+  if (!value || String(value).trim() === '') return null;
+  const str = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str; // already ISO
+  const match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+  return null;
+}
 
 export const reportService = {
   async createDraft(templateCode: string, userId: string): Promise<Report> {
@@ -29,7 +39,7 @@ export const reportService = {
       .order('updated_at', { ascending: false });
 
     if (filters?.status && filters.status !== 'all') {
-      query = query.eq('status', filters.status);
+      query = query.eq('status', filters.status as 'draft' | 'completed' | 'archived');
     }
     if (filters?.search) {
       query = query.ilike('client_name', `%${filters.search}%`);
@@ -37,7 +47,7 @@ export const reportService = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as Report[];
   },
 
   async update(id: string, updates: ReportUpdate): Promise<Report> {
@@ -52,15 +62,15 @@ export const reportService = {
   },
 
   async updateFormData(id: string, formData: Record<string, unknown>): Promise<void> {
-    // Extract top-level structured fields for searchability
     const structured: ReportUpdate = {
-      form_data: formData as never,
-      client_name: formData.cliente as string ?? null,
-      city: formData.ciudad as string ?? null,
-      equipment: formData.equipo as string ?? null,
-      brand: formData.marca as string ?? null,
-      model: formData.modelo as string ?? null,
-      report_date: formData.fecha as string ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      form_data: formData as any,
+      client_name: (formData.cliente as string | undefined) ?? null,
+      city: (formData.ciudad as string | undefined) ?? null,
+      equipment: (formData.equipo as string | undefined) ?? null,
+      brand: (formData.marca as string | undefined) ?? null,
+      model: (formData.modelo as string | undefined) ?? null,
+      report_date: toIsoDate(formData.fecha),
     };
 
     const { error } = await supabase
@@ -82,6 +92,14 @@ export const reportService = {
     const { error } = await supabase
       .from('reports')
       .update({ status: 'archived' })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async unarchive(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('reports')
+      .update({ status: 'draft' })
       .eq('id', id);
     if (error) throw error;
   },

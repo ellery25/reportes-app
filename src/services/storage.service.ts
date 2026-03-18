@@ -8,7 +8,7 @@ export const storageService = {
     const path = `${userId}/${reportId}/${filename}`;
 
     const base64 = await FileSystem.readAsStringAsync(localUri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64',
     });
 
     const { error } = await supabase.storage
@@ -20,12 +20,28 @@ export const storageService = {
   },
 
   async uploadSignature(base64Data: string, reportId: string, userId: string, type: 'executed' | 'approved'): Promise<string> {
-    const path = `${userId}/${reportId}/sig_${type}.png`;
-    const imageData = base64Data.replace(/^data:image\/png;base64,/, '');
+    const mimeMatch = base64Data.match(/^data:([^;]+);base64,/);
+    const contentType = mimeMatch?.[1] ?? 'image/png';
+    const ext = contentType.includes('svg') ? 'svg' : 'png';
+    const path = `${userId}/${reportId}/sig_${type}.${ext}`;
+    const imageData = base64Data.replace(/^data:[^;]+;base64,/, '');
 
     const { error } = await supabase.storage
       .from('reports-signatures')
-      .upload(path, decode(imageData), { contentType: 'image/png', upsert: true });
+      .upload(path, decode(imageData), { contentType, upsert: true });
+
+    if (error) throw error;
+    return path;
+  },
+
+  async uploadPhotoFromDataUri(dataUri: string, reportId: string, userId: string): Promise<string> {
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const path = `${userId}/${reportId}/${filename}`;
+    const imageData = dataUri.replace(/^data:[^;]+;base64,/, '');
+
+    const { error } = await supabase.storage
+      .from('reports-photos')
+      .upload(path, decode(imageData), { contentType: 'image/jpeg' });
 
     if (error) throw error;
     return path;
@@ -34,7 +50,7 @@ export const storageService = {
   async uploadPdf(pdfUri: string, reportId: string, userId: string): Promise<string> {
     const path = `${userId}/${reportId}/report.pdf`;
     const base64 = await FileSystem.readAsStringAsync(pdfUri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: 'base64',
     });
 
     const { error } = await supabase.storage

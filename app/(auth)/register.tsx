@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { authService } from '../../src/services/auth.service';
@@ -10,24 +10,27 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   async function handleRegister() {
+    setError('');
+    setSuccess('');
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      setError('Por favor completa todos los campos');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener mínimo 6 caracteres');
+      setError('La contraseña debe tener mínimo 6 caracteres');
       return;
     }
     setLoading(true);
     try {
       await authService.signUp(email, password);
-      Alert.alert('¡Registro exitoso!', 'Revisa tu correo para confirmar tu cuenta.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)/login') },
-      ]);
+      setSuccess('¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.');
+      setTimeout(() => router.replace('/(auth)/login'), 3000);
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Error al registrarse');
+      setError(e instanceof Error ? e.message : 'Error al registrarse');
     } finally {
       setLoading(false);
     }
@@ -52,7 +55,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(v) => { setEmail(v); setError(''); }}
         />
         <TextInput
           style={styles.input}
@@ -60,8 +63,11 @@ export default function RegisterScreen() {
           placeholderTextColor="#9ca3af"
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(v) => { setPassword(v); setError(''); }}
         />
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {success ? <Text style={styles.successText}>{success}</Text> : null}
 
         <TouchableOpacity
           style={[styles.btn, loading && styles.btnDisabled]}
@@ -93,6 +99,12 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 22, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 24 },
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12,
            fontSize: 15, color: '#111827', marginBottom: 12 },
+  errorText: { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
+               borderRadius: 8, padding: 10, color: '#dc2626', fontSize: 13,
+               marginBottom: 12, lineHeight: 18 },
+  successText: { backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#86efac',
+                 borderRadius: 8, padding: 10, color: '#16a34a', fontSize: 13,
+                 marginBottom: 12, lineHeight: 18 },
   btn: { backgroundColor: '#1e3a5f', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 4 },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },

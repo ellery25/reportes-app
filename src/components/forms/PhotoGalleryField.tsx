@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 interface Props {
@@ -58,9 +58,11 @@ export function PhotoGalleryField({ value = [], onChange, maxPhotos = 10 }: Prop
   return (
     <View style={styles.container}>
       <View style={styles.btnRow}>
-        <TouchableOpacity style={styles.addBtn} onPress={takePhoto}>
-          <Text style={styles.addBtnText}>📷 Cámara</Text>
-        </TouchableOpacity>
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity style={styles.addBtn} onPress={takePhoto}>
+            <Text style={styles.addBtnText}>📷 Cámara</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.addBtn} onPress={pickImage}>
           <Text style={styles.addBtnText}>🖼 Galería</Text>
         </TouchableOpacity>

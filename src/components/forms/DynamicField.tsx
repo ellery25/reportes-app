@@ -1,17 +1,19 @@
-import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Controller } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
 import type { FieldDefinition } from '../../templates/types';
 import { PhotoGalleryField } from './PhotoGalleryField';
 import { SignatureField } from './SignatureField';
+import { DatePickerField } from './DatePickerField';
 
 interface Props {
   field: FieldDefinition;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<any>;
+  onAfterChange?: () => void;
 }
 
-export function DynamicField({ field, control }: Props) {
+export function DynamicField({ field, control, onAfterChange }: Props) {
   return (
     <Controller
       control={control}
@@ -29,7 +31,7 @@ export function DynamicField({ field, control }: Props) {
               style={[styles.input, error && styles.inputError]}
               value={value ?? ''}
               onChangeText={onChange}
-              onBlur={onBlur}
+              onBlur={() => { onBlur(); onAfterChange?.(); }}
               placeholder={field.placeholder ?? `Ingresa ${field.label.toLowerCase()}`}
               placeholderTextColor="#9ca3af"
             />
@@ -40,7 +42,7 @@ export function DynamicField({ field, control }: Props) {
               style={[styles.input, styles.textarea, error && styles.inputError]}
               value={value ?? ''}
               onChangeText={onChange}
-              onBlur={onBlur}
+              onBlur={() => { onBlur(); onAfterChange?.(); }}
               placeholder={field.placeholder ?? `Ingresa ${field.label.toLowerCase()}`}
               placeholderTextColor="#9ca3af"
               multiline
@@ -54,7 +56,7 @@ export function DynamicField({ field, control }: Props) {
               style={[styles.input, error && styles.inputError]}
               value={value?.toString() ?? ''}
               onChangeText={(v) => onChange(v ? Number(v) : '')}
-              onBlur={onBlur}
+              onBlur={() => { onBlur(); onAfterChange?.(); }}
               keyboardType="numeric"
               placeholder={field.placeholder ?? '0'}
               placeholderTextColor="#9ca3af"
@@ -62,21 +64,17 @@ export function DynamicField({ field, control }: Props) {
           )}
 
           {field.type === 'date' && (
-            <TextInput
-              style={[styles.input, error && styles.inputError]}
+            <DatePickerField
               value={value ?? ''}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#9ca3af"
-              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
+              onChange={(v) => { onChange(v); onAfterChange?.(); }}
+              hasError={!!error}
             />
           )}
 
           {field.type === 'photo_gallery' && (
             <PhotoGalleryField
               value={value ?? []}
-              onChange={onChange}
+              onChange={(v) => { onChange(v); onAfterChange?.(); }}
               maxPhotos={field.maxPhotos}
             />
           )}
@@ -84,7 +82,7 @@ export function DynamicField({ field, control }: Props) {
           {field.type === 'signature' && (
             <SignatureField
               value={value}
-              onChange={onChange}
+              onChange={(v) => { onChange(v); onAfterChange?.(); }}
               label={field.label}
             />
           )}

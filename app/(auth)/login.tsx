@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { authService } from '../../src/services/auth.service';
@@ -10,10 +10,12 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleLogin() {
+    setError('');
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor ingresa correo y contraseña');
+      setError('Por favor ingresa correo y contraseña');
       return;
     }
     setLoading(true);
@@ -21,7 +23,7 @@ export default function LoginScreen() {
       await authService.signIn(email, password);
       router.replace('/(app)');
     } catch (e: unknown) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Error al iniciar sesión');
+      setError(e instanceof Error ? e.message : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(v) => { setEmail(v); setError(''); }}
         />
         <TextInput
           style={styles.input}
@@ -55,8 +57,10 @@ export default function LoginScreen() {
           placeholderTextColor="#9ca3af"
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(v) => { setPassword(v); setError(''); }}
         />
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         <TouchableOpacity
           style={[styles.btn, loading && styles.btnDisabled]}
@@ -89,6 +93,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 22, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 24 },
   input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12,
            fontSize: 15, color: '#111827', marginBottom: 12 },
+  errorText: { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5',
+               borderRadius: 8, padding: 10, color: '#dc2626', fontSize: 13,
+               marginBottom: 12, lineHeight: 18 },
   btn: { backgroundColor: '#1e3a5f', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 4 },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
